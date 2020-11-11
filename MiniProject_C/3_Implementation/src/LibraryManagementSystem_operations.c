@@ -1,43 +1,28 @@
 #include <LibraryManagementSystem_operations.h>
 
-int Addbook(int operand1, int operand2)
+int Add_Books(int operand1, int operand2)
 {
     return operand1 + operand2;
 }
 
-int Searchbook(int operand1, int operand2)
+int Search_Books(int operand1, int operand2)
 {
     return operand1 - operand2;
 }
 
-int Displaybook(int operand1, int operand2)
+int View_Books(int operand1, int operand2)
 {
     return operand1 * operand2;
 }
-int Author(int operand1, int operand2)
+int Delete_Book(int operand1, int operand2)
 {
     return operand1 * operand2;
 }
-int Titlelist(int operand1, int operand2)
+int Update_Password(int operand1, int operand2)
 {
     return operand1 * operand2;
 }
-int Stock(int operand1, int operand2)
-{
-    return operand1 * operand2;
-}
-int Issue(int operand1, int operand2)
-{
-    return operand1 * operand2;
-}
-int bookret(int operand1, int operand2)
-{
-    return operand1 * operand2;
-}
-int Addmembr(int operand1, int operand2)
-{
-    return operand1 * operand2;
-}
+
 int Exit(int operand1, int operand2)
 {
     if(0 == operand2)
