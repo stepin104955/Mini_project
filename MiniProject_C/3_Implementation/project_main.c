@@ -1,542 +1,497 @@
-#include<stdio.h>
-#include<ctype.h>
-#include<string.h>
-#include<stdlib.h>
-
-#define IN 1
-#define OUT 0
-
-void Addbook();
-void Searchbook();
-void Displaybook();
-void Author();
-void Titlelist();
-void Stock();
-void Issue();
-void bookret();
-void Addmembr();
-void Exit();
-
-char info[500];
-
-struct
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
+#define MAX_YR  9999
+#define MIN_YR  1900
+#define MAX_SIZE_USER_NAME 30
+#define MAX_SIZE_PASSWORD  20
+#define FILE_NAME  "AticleworldLibBookS.bin"
+// Macro related to the books info
+#define MAX_BOOK_NAME   50
+#define MAX_AUTHOR_NAME 50
+#define MAX_STUDENT_NAME 50
+#define MAX_STUDENT_ADDRESS 300
+#define FILE_HEADER_SIZE  sizeof(sFileHeader)
+//structure to store date
+typedef struct
 {
-  int bid;
-  char bname[25] ;
-  char author[25];
-  int nooftitles;
-  char titles[500];
-  int status;
-}book;
-struct
+    int yyyy;
+    int mm;
+    int dd;
+} Date;
+typedef struct
 {
-  int mid;
-  char mname[25] ;
-  char department[25];
-  int availibcard;
-  int phno;
-
-}membr;
-
-//initializing the files used in the program
-
-FILE *librecord;
-FILE *membrrecord;
-FILE *fp1;
-FILE *fp2;
-FILE *temp1;
-FILE *temp2;
-int main()
+    char username[MAX_SIZE_USER_NAME];
+    char password[MAX_SIZE_PASSWORD];
+} sFileHeader;
+typedef struct// to call in program
 {
-    int choice=0,i;
-
-    printf("\n\t\t---Library Management System---\n");
-    do{
-    printf("\n\t--MENU--\n \n 1. Add A New Book\n 2. Search a book \n 3. Display Complete Information\n 4. Display All Books of An Author\n 5. List Titles of a Book\n 6. List Count of Books (Issued & On Stock)\n 7. To Issue a Book \n 8. To Return a Book \n 9. Add A New Member\n 10.Exit the program\n\n\t Enter your choice <1-10>: ");
-    scanf("%i",&choice);
-
-    switch (choice)
+    unsigned int books_id; // declare the integer data type
+    char bookName[MAX_BOOK_NAME];// declare the character data type
+    char authorName[MAX_AUTHOR_NAME];// declare the charecter data type
+    char studentName[MAX_STUDENT_NAME];// declare the character data type
+    char studentAddr[MAX_STUDENT_ADDRESS];// declare the character data type
+    Date bookIssueDate;// declare the integer data type
+} s_BooksInfo;
+void printMessageCenter(const char* message)
+{
+    int len =0;
+    int pos = 0;
+    //calculate how many space need to print
+    len = (78 - strlen(message))/2;
+    printf("\t\t\t");
+    for(pos =0 ; pos < len ; pos++)
     {
+        //print space
+        printf(" ");
+    }
+    //print message
+    printf("%s",message);
+}
+void headMessage(const char *message)
+{
+    system("cls");
+    printf("\t\t\t###########################################################################");
+    printf("\n\t\t\t############                                                   ############");
+    printf("\n\t\t\t############      Library management System Project in C       ############");
+    printf("\n\t\t\t############                                                   ############");
+    printf("\n\t\t\t###########################################################################");
+    printf("\n\t\t\t---------------------------------------------------------------------------\n");
+    printMessageCenter(message);
+    printf("\n\t\t\t----------------------------------------------------------------------------");
+}
+void welcomeMessage()
+{
+    headMessage("www.aticleworld.com");
+    printf("\n\n\n\n\n");
+    printf("\n\t\t\t  **-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**\n");
+    printf("\n\t\t\t        =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+    printf("\n\t\t\t        =                 WELCOME                   =");
+    printf("\n\t\t\t        =                   TO                      =");
+    printf("\n\t\t\t        =                 LIBRARY                   =");
+    printf("\n\t\t\t        =               MANAGEMENT                  =");
+    printf("\n\t\t\t        =                 SYSTEM                    =");
+    printf("\n\t\t\t        =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+    printf("\n\t\t\t  **-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**-**\n");
+    printf("\n\n\n\t\t\t Enter any key to continue.....");
+    getch();
+}
+int isNameValid(const char *name)
+{
+    int validName = 1;
+    int len = 0;
+    int index = 0;
+    len = strlen(name);
+    for(index =0; index <len ; ++index)
+    {
+        if(!(isalpha(name[index])) && (name[index] != '\n') && (name[index] != ' '))
+        {
+            validName = 0;
+            break;
+        }
+    }
+    return validName;
+}
+// Function to check leap year.
+//Function returns 1 if leap year
+int  IsLeapYear(int year)
+{
+    return (((year % 4 == 0) &&
+             (year % 100 != 0)) ||
+            (year % 400 == 0));
+}
+// returns 1 if given date is valid.
+int isValidDate(Date *validDate)
+{
+    //check range of year,month and day
+    if (validDate->yyyy > MAX_YR ||
+            validDate->yyyy < MIN_YR)
+        return 0;
+    if (validDate->mm < 1 || validDate->mm > 12)
+        return 0;
+    if (validDate->dd < 1 || validDate->dd > 31)
+        return 0;
+    //Handle feb days in leap year
+    if (validDate->mm == 2)
+    {
+        if (IsLeapYear(validDate->yyyy))
+            return (validDate->dd <= 29);
+        else
+            return (validDate->dd <= 28);
+    }
+    //handle months which has only 30 days
+    if (validDate->mm == 4 || validDate->mm == 6 ||
+            validDate->mm == 9 || validDate->mm == 11)
+        return (validDate->dd <= 30);
+    return 1;
+}
+// Add books in list
+void addBookInDataBase()
+{
+    int days;
+    s_BooksInfo addBookInfoInDataBase = {0};
+    FILE *fp = NULL;
+    int status = 0;
+    fp = fopen(FILE_NAME,"ab+");
+    if(fp == NULL)
+    {
+        printf("File is not opened\n");
+        exit(1);
+    }
+    headMessage("ADD NEW BOOKS");
+    printf("\n\n\t\t\tENTER YOUR DETAILS BELOW:");
+    printf("\n\t\t\t---------------------------------------------------------------------------\n");
+    printf("\n\t\t\tBook ID NO  = ");
+    fflush(stdin);
+    scanf("%u",&addBookInfoInDataBase.books_id);
+    do
+    {
+        printf("\n\t\t\tBook Name  = ");
+        fflush(stdin);
+        fgets(addBookInfoInDataBase.bookName,MAX_BOOK_NAME,stdin);
+        status = isNameValid(addBookInfoInDataBase.bookName);
+        if (!status)
+        {
+            printf("\n\t\t\tName contain invalid character. Please enter again.");
+        }
+    }
+    while(!status);
+    do
+    {
+        printf("\n\t\t\tAuthor Name  = ");
+        fflush(stdin);
+        fgets(addBookInfoInDataBase.authorName,MAX_AUTHOR_NAME,stdin);
+        status = isNameValid(addBookInfoInDataBase.authorName);
+        if (!status)
+        {
+            printf("\n\t\t\tName contain invalid character. Please enter again.");
+        }
+    }
+    while(!status);
+    do
+    {
+        printf("\n\t\t\tStudent Name  = ");
+        fflush(stdin);
+        fgets(addBookInfoInDataBase.studentName,MAX_STUDENT_NAME,stdin);
+        status = isNameValid(addBookInfoInDataBase.studentName);
+        if (!status)
+        {
+            printf("\n\t\t\tName contain invalid character. Please enter again.");
+        }
+    }
+    while(!status);
+    do
+    {
+        //get date year,month and day from user
+        printf("\n\t\t\tEnter date in format (day/month/year): ");
+        scanf("%d/%d/%d",&addBookInfoInDataBase.bookIssueDate.dd,&addBookInfoInDataBase.bookIssueDate.mm,&addBookInfoInDataBase.bookIssueDate.yyyy);
+        //check date validity
+        status = isValidDate(&addBookInfoInDataBase.bookIssueDate);
+        if (!status)
+        {
+            printf("\n\t\t\tPlease enter a valid date.\n");
+        }
+    }
+    while(!status);
+    fwrite(&addBookInfoInDataBase,sizeof(addBookInfoInDataBase), 1, fp);
+    fclose(fp);
+}
+// search books
+void searchBooks()
+{
+    int found = 0;
+    char bookName[MAX_BOOK_NAME] = {0};
+    s_BooksInfo addBookInfoInDataBase = {0};
+    FILE *fp = NULL;
+    int status = 0;
+    fp = fopen(FILE_NAME,"rb");
+    if(fp == NULL)
+    {
+        printf("\n\t\t\tFile is not opened\n");
+        exit(1);
+    }
+    headMessage("SEARCH BOOKS");
+    //put the control on books detail
+    if (fseek(fp,FILE_HEADER_SIZE,SEEK_SET) != 0)
+    {
+        fclose(fp);
+        printf("\n\t\t\tFacing issue while reading file\n");
+        exit(1);
+    }
+    printf("\n\n\t\t\tEnter Book Name to search:");
+    fflush(stdin);
+    fgets(bookName,MAX_BOOK_NAME,stdin);
+    while (fread (&addBookInfoInDataBase, sizeof(addBookInfoInDataBase), 1, fp))
+    {
+        if(!strcmp(addBookInfoInDataBase.bookName, bookName))
+        {
+            found = 1;
+            break;
+        }
+    }
+    if(found)
+    {
+        printf("\n\t\t\tBook id = %u\n",addBookInfoInDataBase.books_id);
+        printf("\t\t\tBook name = %s",addBookInfoInDataBase.bookName);
+        printf("\t\t\tBook authorName = %s",addBookInfoInDataBase.authorName);
+        printf("\t\t\tBook issue date(day/month/year) =  (%d/%d/%d)",addBookInfoInDataBase.bookIssueDate.dd,
+               addBookInfoInDataBase.bookIssueDate.mm, addBookInfoInDataBase.bookIssueDate.yyyy);
+    }
+    else
+    {
+        printf("\n\t\t\tNo Record");
+    }
+    fclose(fp);
+    printf("\n\n\n\t\t\tPress any key to go to main menu.....");
+    getchar();
+}
+// v books function
+void viewBooks()
+{
+    int found = 0;
+    char bookName[MAX_BOOK_NAME] = {0};
+    s_BooksInfo addBookInfoInDataBase = {0};
+    FILE *fp = NULL;
+    int status = 0;
+    unsigned int countBook = 1;
+    headMessage("VIEW BOOKS DETAILS");
+    fp = fopen(FILE_NAME,"rb");
+    if(fp == NULL)
+    {
+        printf("File is not opened\n");
+        exit(1);
+    }
+    if (fseek(fp,FILE_HEADER_SIZE,SEEK_SET) != 0)
+    {
+        fclose(fp);
+        printf("Facing issue while reading file\n");
+        exit(1);
+    }
+    while (fread (&addBookInfoInDataBase, sizeof(addBookInfoInDataBase), 1, fp))
+    {
+        printf("\n\t\t\tBook Count = %d\n\n",countBook);
+        printf("\t\t\tBook id = %u",addBookInfoInDataBase.books_id);
+        printf("\n\t\t\tBook name = %s",addBookInfoInDataBase.bookName);
+        printf("\t\t\tBook authorName = %s",addBookInfoInDataBase.authorName);
+        printf("\t\t\tBook issue date(day/month/year) =  (%d/%d/%d)\n\n",addBookInfoInDataBase.bookIssueDate.dd,
+               addBookInfoInDataBase.bookIssueDate.mm, addBookInfoInDataBase.bookIssueDate.yyyy);
+        found = 1;
+        ++countBook;
+    }
+    fclose(fp);
+    if(!found)
+    {
+        printf("\n\t\t\tNo Record");
+    }
+    printf("\n\n\t\t\tPress any key to go to main menu.....");
+    fflush(stdin);
+    getchar();
+}
+// delete function
+void deleteBooks()
+{
+    int found = 0;
+    int bookDelete = 0;
+    sFileHeader fileHeaderInfo = {0};
+    char bookName[MAX_BOOK_NAME] = {0};
+    s_BooksInfo addBookInfoInDataBase = {0};
+    FILE *fp = NULL;
+    FILE *tmpFp = NULL;
+    int status = 0;
+    headMessage("Delete Books Details");
+    fp = fopen(FILE_NAME,"rb");
+    if(fp == NULL)
+    {
+        printf("File is not opened\n");
+        exit(1);
+    }
+    tmpFp = fopen("tmp.bin","wb");
+    if(tmpFp == NULL)
+    {
+        fclose(fp);
+        printf("File is not opened\n");
+        exit(1);
+    }
+    fread (&fileHeaderInfo,FILE_HEADER_SIZE, 1, fp);
+    fwrite(&fileHeaderInfo,FILE_HEADER_SIZE, 1, tmpFp);
+    printf("\n\t\t\tEnter Book ID NO. for delete:");
+    scanf("%d",&bookDelete);
+    while (fread (&addBookInfoInDataBase, sizeof(addBookInfoInDataBase), 1, fp))
+    {
+        if(addBookInfoInDataBase.books_id != bookDelete)
+        {
+            fwrite(&addBookInfoInDataBase,sizeof(addBookInfoInDataBase), 1, tmpFp);
+        }
+        else
+        {
+            found = 1;
+        }
+    }
+    (found)? printf("\n\t\t\tRecord deleted successfully....."):printf("\n\t\t\tRecord not found");
+    fclose(fp);
+    fclose(tmpFp);
+    remove(FILE_NAME);
+    rename("tmp.bin",FILE_NAME);
+}
+void updateCredential(void)
+{
+    sFileHeader fileHeaderInfo = {0};
+    FILE *fp = NULL;
+    unsigned char userName[MAX_SIZE_USER_NAME] = {0};
+    unsigned char password[MAX_SIZE_PASSWORD] = {0};
+    headMessage("Update Credential");
+    fp = fopen(FILE_NAME,"rb+");
+    if(fp == NULL)
+    {
+        printf("File is not opened\n");
+        exit(1);
+    }
+    fread (&fileHeaderInfo,FILE_HEADER_SIZE, 1, fp);
+    if (fseek(fp,0,SEEK_SET) != 0)
+    {
+        fclose(fp);
+        printf("\n\t\t\tFacing issue while updating password\n");
+        exit(1);
+    }
+    printf("\n\n\t\t\tNew Username:");
+    fflush(stdin);
+    fgets(userName,MAX_SIZE_USER_NAME,stdin);
+    printf("\n\n\t\t\tNew Password:");
+    fflush(stdin);
+    fgets(password,MAX_SIZE_PASSWORD,stdin);
+    strncpy(fileHeaderInfo.username,userName,sizeof(userName));
+    strncpy(fileHeaderInfo.password,password,sizeof(password));
+    fwrite(&fileHeaderInfo,FILE_HEADER_SIZE, 1, fp);
+    fclose(fp);
+    printf("\n\t\t\tYour Password has been changed successfully");
+    printf("\n\t\t\ttLogin Again:");
+    fflush(stdin);
+    getchar();
+    exit(1);
+}
+void menu()
+{
+    int choice = 0;
+    do
+    {
+        headMessage("MAIN MENU");
+        printf("\n\n\n\t\t\t1.Add Books");
+        printf("\n\t\t\t2.Search Books");
+        printf("\n\t\t\t3.View Books");
+        printf("\n\t\t\t4.Delete Book");
+        printf("\n\t\t\t5.Update Password");
+        printf("\n\t\t\t0.Exit");
+        printf("\n\n\n\t\t\tEnter choice => ");
+        scanf("%d",&choice);
+        switch(choice)
+        {
         case 1:
-            Addbook();
+            addBookInDataBase();
             break;
         case 2:
-            Searchbook();
+            searchBooks();
             break;
         case 3:
-            Displaybook();
+            viewBooks();
             break;
         case 4:
-            Author();
+            deleteBooks();
             break;
         case 5:
-            Titlelist();
+            updateCredential();
             break;
-        case 6:
-            Stock();
+        case 0:
+            printf("\n\n\n\t\t\t\tThank you!!!\n\n\n\n\n");
+            exit(1);
             break;
-        case 7:
-            Issue();
-            break;
-        case 8:
-            bookret();
-            break;
-        case 9:
-            Addmembr();
-            break;
-        case 10:
-            Exit();
         default:
-            printf(" ! Invalid Input...\n");
+            printf("\n\n\n\t\t\tINVALID INPUT!!! Try again...");
+        }                                            //Switch Ended
     }
-}while(choice!=10);
- return (0);
+    while(choice!=0);                                        //Loop Ended
 }
-
-void Addbook()
+//login password
+void login()
 {
-    int i;book.status=IN;
-            //opening the librecord file
-    librecord = fopen("librecord.txt","a+");
-    printf("Enter The number of The Book :(Integer) \n");
-        scanf("%d",&book.bid);
-    printf("Enter The Name of The Book :\n");
-        scanf("%s",book.bname);
-    printf("Enter The Name of Author :\n");
-        scanf("%s",book.author);
-    printf("Enter The Number of Titles Of The Book:(Integer)\n");
-        scanf("%d",&book.nooftitles);
-    fprintf(librecord,"\n%d\t%s\t%s\t%d\t%d\t",book.bid,book.bname,book.author,book.status,book.nooftitles);
-    printf("Enter The Titles Of The Book : \n");
-    for(i=0;i<book.nooftitles;i++)
+    unsigned char userName[MAX_SIZE_USER_NAME] = {0};
+    unsigned char password[MAX_SIZE_PASSWORD] = {0};
+    int L=0;
+    sFileHeader fileHeaderInfo = {0};
+    FILE *fp = NULL;
+    headMessage("Login");
+    fp = fopen(FILE_NAME,"rb");
+    if(fp == NULL)
     {
-        scanf("%s",book.titles);
-        fprintf(librecord,"%s\t",book.titles);
+        printf("File is not opened\n");
+        exit(1);
     }
-    fclose(librecord);
-    printf(" (' ' ) A New Book has been Added Successfully...\n");
-
-}
-
-void Displaybook()
-{
-    librecord = fopen("librecord.txt","a+");
-    printf("\nBookid\tName\tAuthor\tStatus\tNo.\tTitles\n",info);
+    fread (&fileHeaderInfo,FILE_HEADER_SIZE, 1, fp);
+    fclose(fp);
     do
     {
-        fgets(info,500,librecord);
-        printf("%s\n",info);
-    }while(!feof(librecord));
-    fclose(librecord);
-    membrrecord = fopen("membrrecord.txt","a+");
-    printf("\nMid\tName\tDept\tPh.no\tAvailablecards\n");
-    do
-    {
-        fgets(info,500,membrrecord);
-        printf("%s\n",info);
-    }while(!feof(membrrecord));
-    fclose(membrrecord);
-
-}
-
-void Searchbook()
-{
-    int i;
-    char Target[25],stats[3];
-    int Found=0;
-    if((librecord=fopen("librecord.txt","r"))==NULL)
-        printf(" ! The File is Empty...\n\n");
-    else
-    {
-        printf("\nEnter The Name Of Book : ");
-            scanf("%s",Target);
-        while(!feof(librecord)&& Found==0)
+        printf("\n\n\n\t\t\t\tUsername:");
+        fgets(userName,MAX_SIZE_USER_NAME,stdin);
+        printf("\n\t\t\t\tPassword:");
+        fgets(password,MAX_SIZE_PASSWORD,stdin);
+        if((!strcmp(userName,fileHeaderInfo.username)) && (!strcmp(password,fileHeaderInfo.password)))
         {
-        fscanf(librecord,"%d %s %s %d %d", &book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-            if(strcmp(Target,book.bname)==0)
-                Found=1;
-            for(i=0;i<book.nooftitles;i++)
-                fscanf(librecord,"%s",book.titles);
+            menu();
         }
-        if(Found)
+        else
         {
-            if(book.status==IN)
-                strcpy(stats,"IN");
-            else
-                strcpy(stats,"OUT");
-
-            printf("\nThe Unique ID of The Book:  %d\nThe Name of Book is:  %s\nThe Author is:  %s\nThe Book Status:%s\n\n",book.bid,book.bname,book.author,stats);
-            }
-        else if(!Found)
-            printf("! There is no such Entry...\n");
-        fclose(librecord);
+            printf("\t\t\t\tLogin Failed Enter Again Username & Password\n\n");
+            L++;
+        }
     }
-
-}
-
-void Author()
-{
-    int i;
-    char Target[500];
-    int Found=0;
-    if((librecord=fopen("librecord.txt","r"))==NULL)
-    printf(" ! The file is empty... \n\n");
-    else
+    while(L<=3);
+    if(L>3)
     {
-        printf("\nEnter The Name Of Author : ");
-            scanf("%s",Target);
-        printf("\nBooks:");
-        while(!feof(librecord))
-        {
-            fscanf(librecord,"%d %s %s %d %d",&book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-            if(strcmp(Target,book.author)==0)
-            {
-                Found=1;
-                printf("\n\t%s",book.bname);
-            }
-            for(i=0;i<book.nooftitles;i++)
-                fscanf(librecord,"%s",book.titles);
-        }
-        if(!Found)
-            printf(" ! There is no such Entry...\n");
-        fclose(librecord);
+        headMessage("Login Failed");
+        printf("\t\t\t\tSorry,Unknown User.");
+        getch();
+        system("cls");
     }
-
 }
-void Titlelist()
+int isFileExists(const char *path)
 {
-    int i;
-    char Target[500];
-    int Found=0;
-    if((librecord=fopen("librecord.txt","r"))==NULL)
-        printf(" ! The file is empty...\n\n");
-    else
+    // Try to open file
+    FILE *fp = fopen(path, "rb");
+    int status = 0;
+    // If file does not exists
+    if (fp != NULL)
     {
-        printf("\nEnter The Book Name :");
-        scanf("%s",Target);
-        while(!feof(librecord)&& Found==0)
-        {
-            fscanf(librecord,"%d %s %s %d %d",&book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-            if(strcmp(Target,book.bname)==0)
-                {
-                    Found=1;
-                    break;
-                }
-            for(i=0;i<book.nooftitles;i++)
-                fscanf(librecord,"%s",book.titles);
-        }
-        if(Found)
-        {
-            //printf("The Name of book is:               %s\n",book.bname);
-            printf("\nThe Titles:\n");
-            for(i=0;i<book.nooftitles;i++)
-            {
-                fscanf(librecord,"%s",book.titles);
-                    printf("%d.%s......\n",i+1,book.titles);
-            }
-        }
-        else if(!Found)
-            printf(" ! There is no such Entry...\n");
-        fclose(librecord);
+        status = 1;
+        // File exists hence close file
+        fclose(fp);
     }
-
+    return status;
 }
-void Stock()
+void init()
 {
-    int i,issuecount=0,stockcount=0;
-    char Issued[100][20];
-    int Found=0;
-    if((librecord=fopen("librecord.txt","r"))==NULL)
-        printf(" ! The file is empty...\n\n");
-    else
+    FILE *fp = NULL;
+    int status = 0;
+    const char defaultUsername[] ="aticleworld\n";
+    const char defaultPassword[] ="aticleworld\n";
+    sFileHeader fileHeaderInfo = {0};
+    status = isFileExists(FILE_NAME);
+    if(!status)
     {
-        while(!feof(librecord))
+        //create the binary file
+        fp = fopen(FILE_NAME,"wb");
+        if(fp != NULL)
         {
-            fscanf(librecord,"%d %s %s %d %d",&book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-            if(book.status==IN)
-            {
-                stockcount++;
-            }
-            else
-            {
-                issuecount++;
-            }
-            for(i=0;i<book.nooftitles;i++)
-                fscanf(librecord,"%s",book.titles);
+            //Copy default password
+            strncpy(fileHeaderInfo.password,defaultPassword,sizeof(defaultPassword));
+            strncpy(fileHeaderInfo.username,defaultUsername,sizeof(defaultUsername));
+            fwrite(&fileHeaderInfo,FILE_HEADER_SIZE, 1, fp);
+            fclose(fp);
         }
-        fclose(librecord);
-    printf("\nCount of issued Books:%d\nCount of Books in Stock:%d\n",issuecount,stockcount-1);
     }
-
 }
-void Addmembr()
+int main()
 {
-    int i;
-
-    membrrecord = fopen("membrrecord.txt","a+");
-    printf("Enter The userid of the Member(Integer) :\n");
-        scanf("%d",&membr.mid);
-    printf("Enter The Name of the Member :\n");
-        scanf("%s",membr.mname);
-    printf("Enter The Department\n");
-        scanf("%s",membr.department);
-
-    printf("Enter The phone number of the member:\n");
-        scanf("%d",&membr.phno);
-    membr.availibcard=5;
-    fprintf(membrrecord,"\n%d\t%s\t%s\t%d\t%d\t",membr.mid,membr.mname,membr.department,membr.phno,    membr.availibcard);
-    fclose(membrrecord);
-    printf("\n (' ') Added  A New member Successfully...\n");
-
-
+    init();
+    welcomeMessage();
+    login();
+    return 0;
 }
-void Issue()
-{
-    int mid,i,Found1=0,Found2=0;char issubookname[20];
-    //temp1=librecord;temp2=membrrecord;
-    printf("\nEnter The userid of the Member : \n");
-        scanf("%d",&mid);
-    if((membrrecord=fopen("membrrecord.txt","r"))==NULL)
-        printf(" ! The file is empty...\n\n");
-    else
-    {
-        while(!feof(membrrecord)&& Found1==0)
-        {
-            fscanf(membrrecord,"%d %s %s %d %d ",&membr.mid,membr.mname,membr.department,&membr.phno,&membr.availibcard);
-            if(mid==membr.mid)
-            {
-                Found1=1;
-            }
-        }
-        if(Found1)
-        {
-            if(membr.availibcard<1)
-            {
-                printf(" ! Library card not available...\n");
-            }
-            else
-            {    printf("\nEnter The Name of book :");
-                scanf("%s",issubookname);
-                if((librecord=fopen("librecord.txt","r"))==NULL)
-                    printf(" ! The file is empty...\n\n");
-                else
-                {
-                    while(!feof(librecord)&& Found2==0)
-                    {
-                        fscanf(librecord,"%d %s %s %d %d", &book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-                        if(strcmp(issubookname,book.bname)==0)
-                            Found2=1;
-                        for(i=0;i<book.nooftitles;i++)
-                            fscanf(librecord,"%s",book.titles);
-                    }
-                    if(Found2)
-                    {
-                        if(book.status==0)
-                        {
-                            printf(" ! Book already issued...\n");
-                        }
-                        else
-                        {
-
-                            fp2=fopen("fp2.txt","w");
-                            if((temp2=fopen("membrrecord.txt","r"))==NULL)
-                                printf(" ! The file is empty...\n\n");
-                            else
-                            {
-                                while(!feof(temp2))
-                                {
-                                    fscanf(temp2,"%d %s %s %d %d ",&membr.mid,membr.mname,membr.department,&membr.phno,&membr.availibcard);
-
-
-                                    if(mid==membr.mid)
-                                    {
-                                        membr.availibcard--;
-                                        fprintf(fp2,"\n %d\t%s\t%s\t%d\t%d\t",membr.mid,membr.mname,membr.department,membr.phno,    membr.availibcard);
-                                    }
-                                    else{
-                                        fprintf(fp2,"\n %d\t%s\t%s\t%d\t%d\t",membr.mid,membr.mname,membr.department,membr.phno,membr.availibcard);}
-                                    if(feof(temp2))
-                                        break;
-                                }
-                            }
-                            fclose(temp2);
-                            fclose(fp2);
-
-
-                            fp1=fopen("fp1.txt","w");
-                            if((temp1=fopen("librecord.txt","r"))==NULL)
-                                printf(" ! The file is empty...\n\n");
-                            else
-                            {
-                                while(!feof(temp1))
-                                {
-                                      fscanf(temp1,"%d %s %s %d %d", &book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-                                    if(feof(temp1))
-                                        break;
-                                    if(strcmp(issubookname,book.bname)!=0)
-                                    {
-                                        fprintf(fp1,"\n%d\t%s\t%s\t%d\t%d    \t",book.bid,book.bname,book.author,book.status,book.nooftitles);
-                                    }
-                                    else
-                                    {
-                                        fprintf(fp1,"\n%d\t%s\t%s\t%d\t%d\t",book.bid,book.bname,book.author,0,book.nooftitles);
-                                    }
-                                    for(i=0;i<book.nooftitles;i++)
-                                    {
-                                        fscanf(temp1,"%s",book.titles);
-                                        fprintf(fp1,"%s\t",book.titles);
-                                    }
-                                }
-                            }
-                            fclose(temp1);
-                            fclose(fp1);
-                            fclose(librecord);
-                            fclose(membrrecord);
-                            remove("librecord.txt");
-                            rename("fp1.txt","librecord.txt");
-                            remove("membrrecord.txt");
-                            rename("fp2.txt","membrrecord.txt");
-                            printf(" (' ') Book Successfully issued...\n");
-                        }
-                    }
-                    else if(!Found2)
-                        printf(" ! There is no such Book...\n");
-
-                }
-            }
-        }
-        else if(!Found1)
-            printf(" ! Invalid User id...\n");
-
-
-    }
-
-}
-void bookret()
-{
-int mid,i,Found1=0,Found2=0,flag=0;char retbookname[20];
-    temp1=librecord;temp2=membrrecord;
-    printf("\nEnter The userid of the Member :\n");
-        scanf("%d",&mid);
-    if((membrrecord=fopen("membrrecord.txt","r"))==NULL)
-        printf(" ! The file is empty...\n\n");
-    else
-    {
-        while(!feof(membrrecord)&& Found1==0)
-        {
-            fscanf(membrrecord,"%d %s %s %d %d ",&membr.mid,membr.mname,membr.department,&membr.phno,&membr.availibcard);
-            if(mid==membr.mid)
-            {
-                Found1=1;
-            }
-        }
-        if(Found1)
-        {
-            if(membr.availibcard>=5)
-            {
-                printf(" ! Error...\n");
-            }
-            else
-            {    printf("\nEnter The Name of book :");
-                scanf("%s",retbookname);
-                if((librecord=fopen("librecord.txt","r"))==NULL)
-                    printf(" ! The file is empty\n\n");
-                else
-                {
-                    while(!feof(librecord)&& Found2==0)
-                    {
-                        fscanf(librecord,"%d %s %s %d %d", &book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-                        if(strcmp(retbookname,book.bname)==0)
-                        Found2=1;
-                        for(i=0;i<book.nooftitles;i++)
-                            fscanf(librecord,"%s",book.titles);
-                    }
-                    if(Found2)
-                    {
-                        if(book.status==1)
-                        {
-                            printf(" ! Error:Book already in stock...\n");
-                        }
-                        else
-                        {
-
-                            fp2=fopen("fp2.txt","w");
-                            if((temp2=fopen("membrrecord.txt","a+"))==NULL)
-                                printf(" ! The file is empty...\n\n");
-                            else
-                            {
-                                while(!feof(temp2))
-                                {
-                                    fscanf(temp2,"%d %s %s %d %d ",&membr.mid,membr.mname,membr.department,&membr.phno,&membr.availibcard);
-
-
-                                    if(mid==membr.mid)
-                                    {
-                                        membr.availibcard++;
-                                        fprintf(fp2,"\n %d\t%s\t%s\t%d\t%d\t",membr.mid,membr.mname,membr.department,membr.phno,    membr.availibcard);
-                                    }
-                                    else
-                                    {
-                                        fprintf(fp2,"\n %d\t%s\t%s\t%d\t%d\t",membr.mid,membr.mname,membr.department,membr.phno,membr.availibcard);
-                                    }
-                                    if(feof(temp2))
-                                        break;
-                                }
-                            }
-                            fclose(temp2);
-                            fclose(fp2);
-
-
-                            fp1=fopen("fp1.txt","w");
-                            if((temp1=fopen("librecord.txt","r"))==NULL)
-                                printf(" ! The file is empty...\n\n");
-                            else
-                            {
-                                while(!feof(temp1))
-                                {
-                                      fscanf(temp1,"%d %s %s %d %d", &book.bid,book.bname,book.author,&book.status,&book.nooftitles);
-                                    if(feof(temp1))
-                                        break;
-                                    if(strcmp(retbookname,book.bname)!=0)
-                                    {
-                                        fprintf(fp1,"\n%d\t%s\t%s\t%d\t%d    \t",book.bid,book.bname,book.author,book.status,book.nooftitles);
-                                    }
-                                    else
-                                    {
-                                        fprintf(fp1,"\n%d\t%s\t%s\t%d\t%d\t",book.bid,book.bname,book.author,1,book.nooftitles);
-                                    }
-                                    for(i=0;i<book.nooftitles;i++)
-                                    {
-                                        fscanf(temp1,"%s",book.titles);
-                                        fprintf(fp1,"%s\t",book.titles);
-                                    }
-                                }
-                            }
-                            fclose(temp1);
-                            fclose(fp1);
-                            fclose(librecord);
-                            fclose(membrrecord);
-                            printf("('') Book Successfully Returned...\n");
-                            remove("librecord.txt");
-                            rename("fp1.txt","librecord.txt");
-                            remove("membrrecord.txt");
-                            rename("fp2.txt","membrrecord.txt");
-
-                        }
-                    }
-                    else if(!Found2)
-                        printf("! There is no such Book...\n");
-
-                }
-            }
-        }
-        else if(!Found1)
-            printf("! Invalid User id...\n");
-    }
-
-}
-void Exit()
-{
-  exit(0);
-}
-
