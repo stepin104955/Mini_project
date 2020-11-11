@@ -16,7 +16,7 @@
 * @param[in] operand2 
 * @return Result of operand1 + operand2
 */
-int Addbook(int operand1, int operand2);
+int Add_Books(int operand1, int operand2);
 
 /**
 *  subtracts the operand1, operand2 and returns the result
@@ -24,7 +24,7 @@ int Addbook(int operand1, int operand2);
 * @param[in] operand2 
 * @return Result of operand1 - operand2
 */
-int Searchbook(int operand1, int operand2);
+int Search_Books(int operand1, int operand2);
 
 /**
 *  multiply the operand1, operand2 and returns the result
@@ -32,7 +32,7 @@ int Searchbook(int operand1, int operand2);
 * @param[in] operand2 
 * @return Result of operand1 * operand2
 */
-int Displaybook(int operand1, int operand2);
+int View_Books(int operand1, int operand2);
 
 
 /**
@@ -42,17 +42,9 @@ int Displaybook(int operand1, int operand2);
 * @return integer value of the operand1 / operand2
 * @note returns 0 for divide by 0 error
 */
-int Author(int operand1, int operand2);
+int Delete_book(int operand1, int operand2);
 
-int Titlelist(int operand1, int operand2);
-
-int Stock(int operand1, int operand2);
-
-int Issue(int operand1, int operand2);
-
-int bookret(int operand1, int operand2);
-
-int Addmembr(int operand1, int operand2);
+int Update_Password(int operand1, int operand2);
 
 int Exit(int operand1, int operand2);
 
