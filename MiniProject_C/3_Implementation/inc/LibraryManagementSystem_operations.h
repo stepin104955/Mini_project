@@ -16,7 +16,7 @@
 * @param[in] operand2 
 * @return Result of operand1 + operand2
 */
-int Add_Books(int operand1, int operand2);
+int Add_Book(int operand1, int operand2);
 
 /**
 *  subtracts the operand1, operand2 and returns the result
@@ -24,7 +24,7 @@ int Add_Books(int operand1, int operand2);
 * @param[in] operand2 
 * @return Result of operand1 - operand2
 */
-int Search_Books(int operand1, int operand2);
+int Search_Book(int operand1, int operand2);
 
 /**
 *  multiply the operand1, operand2 and returns the result
@@ -32,7 +32,7 @@ int Search_Books(int operand1, int operand2);
 * @param[in] operand2 
 * @return Result of operand1 * operand2
 */
-int View_Books(int operand1, int operand2);
+int Edit_Book(int operand1, int operand2);
 
 
 /**
@@ -44,9 +44,7 @@ int View_Books(int operand1, int operand2);
 */
 int Delete_book(int operand1, int operand2);
 
-int Update_Password(int operand1, int operand2);
-
-int Exit(int operand1, int operand2);
+int Moderate_student_request(int operand1, int operand2);
 
 #endif  /* #define __LibraryManagementSystem_OPERATIONS_H__ */
 
