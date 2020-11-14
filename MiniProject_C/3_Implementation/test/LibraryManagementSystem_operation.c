@@ -6,12 +6,11 @@
 #define PROJECT_NAME    "LibraryManagementSystem"
 
 /* Prototypes for all the test functions */
-void test_Add_Books(void);
-void test_Search_Books(void);
-void test_View_Books(void);
+void test_Add_Book(void);
+void test_Search_Book(void);
+void test_Edit_Book(void);
 void test_Delete_Book(void);
-void test_Update_Password(void);
-void test_Exit(void);
+void test_Moderate_student_request(void);
 
 /* Start of the application test */
 int main() {
@@ -24,12 +23,12 @@ int main() {
   
   
   /* Add your test functions in this format for testing*/
-  CU_add_test(suite, "Add_Books", test_Add_Books);
-  CU_add_test(suite, "Search_Books", test_Search_Books);
-  CU_add_test(suite, "View_Books", test_View_Books);
+  CU_add_test(suite, "Add_Book", test_Add_Book);
+  CU_add_test(suite, "Search_Book", test_Search_Book);
+  CU_add_test(suite, "Edit_Book", test_Edit_Book);
   CU_add_test(suite, "Delete_Book", test_Delete_Book);
-   CU_add_test(suite, "Update_Password", test_Update_Password);
-  CU_add_test(suite, "Exit", test_Exit);
+   CU_add_test(suite, "Moderate_student_request", Moderate_student_request);
+ 
 
 
 
@@ -47,25 +46,25 @@ int main() {
 }
 
 /* Write all the test functions */ 
-void test_Add_Books(void) {
-  CU_ASSERT(30 ==Add_Books(10, 20));
+void test_Add_Book(void) {
+  CU_ASSERT(30 ==Add_Book(10, 20));
   
   /* Dummy fail*/
-  CU_ASSERT(1500 == Add_Books(750, 7500));
+  CU_ASSERT(1500 == Add_Book(750, 7500));
 }
 
-void test_Search_Books(void) {
-  CU_ASSERT(-3 == Search_Books(0, 3));
+void test_Search_Book(void) {
+  CU_ASSERT(-3 == Search_Book(0, 3));
   
   /* Dummy fail*/
-  CU_ASSERT(1 == Search_Books(1000, 900));
+  CU_ASSERT(1 == Search_Book(1000, 900));
 }
 
-void test_View_Books(void) {
-  CU_ASSERT(0 == View_Books(1, 0));
+void test_Edit_Book(void) {
+  CU_ASSERT(0 == Edit_Book(1, 0));
   
   /* Dummy fail*/
-  CU_ASSERT(2 == View_Books(2, 5));
+  CU_ASSERT(2 == Edit_Book(2, 5));
 }
 
 void test_Delete_Book(void) {
@@ -75,16 +74,9 @@ void test_Delete_Book(void) {
   CU_ASSERT(3 == Delete_Book(2, 2));
 }
 
-void test_Update_Password(void) {
-  CU_ASSERT(0 == Update_Password(1, 0));
+void test_Moderate_student_request(void) {
+  CU_ASSERT(0 == Moderate_student_request(1, 0));
   
   /* Dummy fail*/
-  CU_ASSERT(3 == Update_Password(2, 2));
-}
-
-void test_Exit(void) {
-  CU_ASSERT(0 == Exit(1, 0));
-  
-  /* Dummy fail*/
-  CU_ASSERT(3 == Exit(2, 2));
+  CU_ASSERT(3 == Moderate_student_request(2, 2));
 }
